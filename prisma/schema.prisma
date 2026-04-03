@@ -1,0 +1,344 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// SHARED SCHEMA — Users, Auth, Profiles, Messaging, Trust
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  phone         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile       Profile?
+  accounts      Account[]
+  sessions      Session[]
+
+  // Village
+  events        Event[]        @relation("EventCreator")
+  rsvps         Rsvp[]
+  groupMembers  GroupMember[]
+  posts         Post[]
+
+  // Restore
+  contentCreated RestoreContent[] @relation("ContentCreator")
+  favorites      Favorite[]
+  journalEntries JournalEntry[]
+  dailyPractices DailyPractice[]
+  streak         Streak?
+
+  // Messaging
+  sentMessages     Message[]                @relation("MessageSender")
+  conversations    ConversationParticipant[]
+  notifications    Notification[]
+
+  // Trust
+  trustScore    TrustScore?
+
+  // Blocking
+  blockedUsers  Block[] @relation("Blocker")
+  blockedBy     Block[] @relation("Blocked")
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  displayName String
+  photoUrl    String?
+  bio         String?
+  city        String?
+  state       String?
+  zip         String?
+  kidsInfo    Json?    // [{ age: 3, name: "optional" }, ...]
+  interests   String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// NextAuth.js required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// MESSAGING
+// ============================================================
+
+model Conversation {
+  id           String                    @id @default(cuid())
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime     @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String
+  contextType    String?  // "listing", "event", etc.
+  contextId      String?  // ID of the listing/event
+  createdAt      DateTime @default(now())
+  readAt         DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  site      String   // "village", "market", "launch", "restore"
+  type      String   // "message", "rsvp", "review", etc.
+  title     String
+  body      String?
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// TRUST & REPUTATION
+// ============================================================
+
+model TrustScore {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  overallScore   Float    @default(0)
+  marketScore    Float    @default(0)
+  villageScore   Float    @default(0)
+  launchScore    Float    @default(0)
+  lastCalculated DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// BLOCKING
+// ============================================================
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id])
+  blocked User @relation("Blocked", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+}
+
+// ============================================================
+// VILLAGE SCHEMA — Events, Groups, Posts, Recommendations
+// ============================================================
+
+model Event {
+  id              String   @id @default(cuid())
+  creatorId       String
+  title           String
+  description     String?
+  locationName    String?
+  locationAddress String?
+  locationLat     Float?
+  locationLng     Float?
+  startsAt        DateTime
+  endsAt          DateTime?
+  kidAgeMin       Int?
+  kidAgeMax       Int?
+  capacity        Int?
+  category        String?  // "playdate", "momnight", "activity", "meetup"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  creator User   @relation("EventCreator", fields: [creatorId], references: [id])
+  rsvps   Rsvp[]
+}
+
+model Rsvp {
+  id      String @id @default(cuid())
+  eventId String
+  userId  String
+  status  String // "going", "maybe", "waitlist"
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String   // "neighborhood", "interest", "age_stage"
+  locationZip String?
+  privacy     String   @default("public") // "public", "private"
+  createdAt   DateTime @default(now())
+
+  members GroupMember[]
+  posts   Post[]
+}
+
+model GroupMember {
+  id      String   @id @default(cuid())
+  groupId String
+  userId  String
+  role    String   @default("member") // "member", "admin"
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  groupId   String
+  authorId  String
+  body      String
+  postType  String   @default("text") // "text", "photo", "question", "recommendation", "poll"
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id])
+}
+
+// ============================================================
+// RESTORE SCHEMA — Content, Favorites, Journals, Streaks
+// ============================================================
+
+model RestoreContent {
+  id              String   @id @default(cuid())
+  creatorId       String
+  title           String
+  description     String?
+  contentType     String   // "affirmation", "meditation", "prayer", "reiki", "breathing", "audio_guide", "written_guide", "video"
+  durationSeconds Int?
+  audioUrl        String?
+  videoUrl        String?
+  body            String?  // For written content
+  momentTags      String[] @default([]) // "overwhelmed", "cant_sleep", "anxious", etc.
+  topicTags       String[] @default([]) // "boundaries", "self_worth", "postpartum", etc.
+  practiceTags    String[] @default([]) // "meditation", "prayer", "breathwork", etc.
+  isPremium       Boolean  @default(false)
+  published       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  creator         User       @relation("ContentCreator", fields: [creatorId], references: [id])
+  favorites       Favorite[]
+  dailyPractices  DailyPractice[]
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String
+  createdAt DateTime @default(now())
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content RestoreContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  body      String   // Encrypted client-side in production
+  entryType String   @default("free") // "prompted", "gratitude", "free"
+  prompt    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DailyPractice {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  completed Boolean  @default(false)
+  contentId String?
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content RestoreContent? @relation(fields: [contentId], references: [id])
+
+  @@unique([userId, date])
+}
+
+model Streak {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  currentStreak    Int      @default(0)
+  longestStreak    Int      @default(0)
+  lastPracticeDate DateTime? @db.Date
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

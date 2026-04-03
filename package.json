@@ -1,0 +1,21 @@
+{
+  "name": "momconnect",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "dev:home": "turbo dev --filter=home",
+    "dev:market": "turbo dev --filter=market",
+    "dev:village": "turbo dev --filter=village",
+    "dev:launch": "turbo dev --filter=launch",
+    "dev:restore": "turbo dev --filter=restore",
+    "dev:safe": "turbo dev --filter=safe",
+    "db:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
+    "db:push": "prisma db push --schema=prisma/schema.prisma",
+    "db:studio": "prisma studio --schema=prisma/schema.prisma"
+  }
+}
