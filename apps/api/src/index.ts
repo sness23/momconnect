@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { authRouter } from "./routes/auth.js";
 import { profileRouter } from "./routes/profile.js";
+import { eventsRouter } from "./routes/events.js";
+import { groupsRouter } from "./routes/groups.js";
 
 const app = express();
 const PORT = process.env.PORT || 4200;
@@ -28,6 +30,8 @@ app.get("/api/health", (_req, res) => {
 // Routes
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
+app.use("/api/events", eventsRouter);
+app.use("/api/groups", groupsRouter);
 
 app.listen(PORT, () => {
   console.log(`MomConnect API running on port ${PORT}`);
