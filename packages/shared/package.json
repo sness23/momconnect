@@ -2,9 +2,12 @@
   "name": "@momconnect/shared",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@prisma/client": "^6.0.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.0.0"
   }
 }

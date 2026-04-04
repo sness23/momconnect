@@ -1,8 +1,6 @@
-"use client";
-
-import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../lib/auth";
 
 interface AuthFormProps {
   mode: "signin" | "signup";
@@ -10,7 +8,8 @@ interface AuthFormProps {
 }
 
 export function AuthForm({ mode, siteColor }: AuthFormProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -22,45 +21,31 @@ export function AuthForm({ mode, siteColor }: AuthFormProps) {
     setError("");
     setLoading(true);
 
-    if (mode === "signup") {
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Something went wrong");
-        setLoading(false);
-        return;
+    try {
+      if (mode === "signup") {
+        await signUp(email, password, name);
+      } else {
+        await signIn(email, password);
       }
-    }
-
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
-    setLoading(false);
-
-    if (result?.error) {
-      setError("Invalid email or password");
-    } else {
-      router.push("/");
-      router.refresh();
+      navigate("/");
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <div className="max-w-sm mx-auto mt-16">
-      <h2 className="text-2xl font-bold mb-6 text-center">
-        {mode === "signin" ? "Sign in" : "Create your account"}
+      <h2
+        className="text-3xl font-light mb-8 text-center tracking-tight"
+        style={{ fontFamily: "var(--font-display, serif)", color: "var(--color-ink, #1a1613)" }}
+      >
+        {mode === "signin" ? "Welcome back" : "Join the village"}
       </h2>
 
       {error && (
-        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm border border-red-200">
           {error}
         </div>
       )}
@@ -68,7 +53,7 @@ export function AuthForm({ mode, siteColor }: AuthFormProps) {
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === "signup" && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--color-ink-light, #4a4540)" }}>
               Name
             </label>
             <input
@@ -76,14 +61,14 @@ export function AuthForm({ mode, siteColor }: AuthFormProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1"
-              style={{ focusRingColor: siteColor } as any}
+              className="w-full px-4 py-2.5 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-offset-1 transition-shadow"
+              style={{ borderColor: "var(--color-cream-dark, #e5e0d8)" }}
             />
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--color-ink-light, #4a4540)" }}>
             Email
           </label>
           <input
@@ -91,12 +76,13 @@ export function AuthForm({ mode, siteColor }: AuthFormProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1"
+            className="w-full px-4 py-2.5 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-offset-1 transition-shadow"
+            style={{ borderColor: "var(--color-cream-dark, #e5e0d8)" }}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--color-ink-light, #4a4540)" }}>
             Password
           </label>
           <input
@@ -105,38 +91,35 @@ export function AuthForm({ mode, siteColor }: AuthFormProps) {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1"
+            className="w-full px-4 py-2.5 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-offset-1 transition-shadow"
+            style={{ borderColor: "var(--color-cream-dark, #e5e0d8)" }}
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2 px-4 rounded-lg text-white font-medium disabled:opacity-50"
+          className="w-full py-2.5 px-4 rounded-full text-white font-medium text-sm tracking-wide disabled:opacity-50 transition-opacity hover:opacity-90"
           style={{ backgroundColor: siteColor }}
         >
-          {loading
-            ? "..."
-            : mode === "signin"
-              ? "Sign in"
-              : "Create account"}
+          {loading ? "..." : mode === "signin" ? "Sign in" : "Create account"}
         </button>
       </form>
 
-      <p className="text-center text-sm text-gray-500 mt-4">
+      <p className="text-center text-sm mt-6" style={{ color: "var(--color-ink-muted, #8a847c)" }}>
         {mode === "signin" ? (
           <>
             New here?{" "}
-            <a href="/auth/signup" className="underline" style={{ color: siteColor }}>
+            <Link to="/auth/signup" className="underline" style={{ color: siteColor }}>
               Create an account
-            </a>
+            </Link>
           </>
         ) : (
           <>
             Already have an account?{" "}
-            <a href="/auth/signin" className="underline" style={{ color: siteColor }}>
+            <Link to="/auth/signin" className="underline" style={{ color: siteColor }}>
               Sign in
-            </a>
+            </Link>
           </>
         )}
       </p>

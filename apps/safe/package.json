@@ -2,27 +2,24 @@
   "name": "safe",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev -p 3050",
-    "build": "next build",
-    "start": "next start -p 3050"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@momconnect/shared": "*",
-    "@auth/prisma-adapter": "^2.0.0",
-    "@prisma/client": "^6.0.0",
-    "bcryptjs": "^2.4.3",
-    "next": "^15.0.0",
-    "next-auth": "^4.24.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.0.0"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.0",
-    "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
     "tailwindcss": "^4.0.0",
-    "@tailwindcss/postcss": "^4.0.0",
-    "typescript": "^5.0.0"
+    "@tailwindcss/vite": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0"
   }
 }

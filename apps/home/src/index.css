@@ -1,0 +1,64 @@
+@import "tailwindcss";
+@source "../../../packages/shared";
+
+@theme {
+  --color-cream: #faf7f2;
+  --color-cream-dark: #f0ebe3;
+  --color-ink: #1a1613;
+  --color-ink-light: #4a4540;
+  --color-ink-muted: #8a847c;
+  --color-brand: #7c3aed;
+  --color-village: #2563eb;
+  --color-restore: #9333ea;
+  --color-market: #059669;
+  --color-launch: #d97706;
+  --color-safe: #dc2626;
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-cream);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blobMorph {
+  0%, 100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+  50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.blob {
+  animation: blobMorph 8s ease-in-out infinite;
+}
+
+.space-card {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.space-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.12);
+}
+
+.space-card .space-arrow {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+.space-card:hover .space-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
